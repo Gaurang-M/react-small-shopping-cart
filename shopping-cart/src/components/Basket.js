@@ -1,10 +1,12 @@
 import React from 'react'
-import {useCartItemContext, useAddCartItemContext, useRemoveCartItemContext} from "../context/Cart.js";
+import {useCartItemContext, CART_ACTIONS} from "../context/Cart.js";
+import {useProductContext} from "../context/Product.js";
 
 export default function Basket() {
-    const cartItems = useCartItemContext();
-    const addToCart = useAddCartItemContext();
-    const removeFromCart = useRemoveCartItemContext();
+    const { state, dispatch } = useCartItemContext();
+    const { cartItems } = state;
+    
+    const { products } = useProductContext();
     const itemPrice = cartItems.reduce((a,c) =>  a+ c.price * c.qty, 0);
     const taxPrice = itemPrice * 0.14;
     const shippingPrice = 50;
@@ -19,8 +21,16 @@ export default function Basket() {
                 <div className="row">
                     <div className="col-1">{item.name}</div>
                     <div className="col-1">
-                        <button className="add" onClick={() => {addToCart(item.id)}}>+</button>
-                        <button className="remove" onClick={() => {removeFromCart(item.id)}}>-</button>
+                        <button className="add" onClick={() => {dispatch({
+                            type: CART_ACTIONS.ADD,
+                            products: products,
+                            id: item.id
+                        })}}>+</button>
+                        <button className="remove" onClick={() => {dispatch({
+                            type: CART_ACTIONS.REMOVE,
+                            products: products,
+                            id: item.id
+                        })}}>-</button>
                     </div>
                     <div className="col-1">
                         {item.qty} X {item.price}

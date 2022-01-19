@@ -1,63 +1,57 @@
-import React, { useContext, useState } from 'react'
-import {useProductContext} from "./Product.js"
+import React, { useContext, useReducer } from 'react'
 
 const CartItemContext = React.createContext();
-const AddCartItemContext = React.createContext();
-const RemoveCartItemContext = React.createContext();
 
 export function useCartItemContext(){
     return useContext(CartItemContext)
 }
 
-export function useAddCartItemContext(){
-    return useContext(AddCartItemContext)
-} 
+const initialState = {
+    cartItems: []
+}
 
-export function useRemoveCartItemContext(){
-    return useContext(RemoveCartItemContext);
+export const CART_ACTIONS = {
+    "ADD" : "ADD_CART_ITEM",
+    "REMOVE" : "REMOVE_CART_ITEM"
+}
+
+const reducer = function(state, action){
+    const exist = state.cartItems.find(product => product.id == action.id);
+    switch(action.type){
+        case "ADD_CART_ITEM":
+            if(exist){
+                return({...state, cartItems: state.cartItems.map(item => {
+                    if(item.id == action.id){
+                        return {...item, qty: item.qty+1}
+                    }
+                    return {...item}
+                })})
+            }else{
+                const product = action.products.find(product => product.id == action.id);
+                return ({...state, cartItems:[...state.cartItems,{...product, qty:1}]})
+            }
+        case "REMOVE_CART_ITEM":
+            if(exist.qty == 1){
+                const updatedCartItems = state.cartItems.filter(product => product.id != action.id)
+                return ({...state, cartItems:[...updatedCartItems]});
+            }else{
+                return({...state, cartItems:state.cartItems.map(item => {
+                    if(item.id == action.id){
+                        return {...item, qty: item.qty-1}
+                    }
+                    return {...item}
+                })});
+            }
+    }
+    return initialState
 }
 
 export default function CartItemProvider({ children }) {
-    const [cartItems, setCartItems] = useState([]);
-    const { products } = useProductContext();
-
-    const addCartItem = function(id){
-        const exist = cartItems.find(product => product.id == id);
-        if(exist){
-            setCartItems(cartItems.map(item => {
-                if(item.id == id){
-                    return {...item, qty: item.qty+1}
-                }
-                return {...item}
-            }))
-        }else{
-            const product = products.find(product => product.id == id);
-            setCartItems([...cartItems,{...product, qty:1}])
-        }
-    }
-
-    const removeCartItem = function(id){
-        const exist = cartItems.find(product => product.id == id);
-        if(exist.qty == 1){
-            const updatedCartItems = cartItems.filter(product => product.id != id)
-            setCartItems([...updatedCartItems]);
-        }else{
-            setCartItems(cartItems.map(item => {
-                if(item.id == id){
-                    return {...item, qty: item.qty-1}
-                }
-                return {...item}
-            }));
-        }
-    }
+    const [state, dispatch] = useReducer(reducer, initialState);
 
     return (
-        <CartItemContext.Provider value={cartItems}>
-            <AddCartItemContext.Provider value={addCartItem}>
-                <RemoveCartItemContext.Provider value={removeCartItem}>
+        <CartItemContext.Provider value={{state, dispatch}}>
                     {children}
-                </RemoveCartItemContext.Provider>
-            </AddCartItemContext.Provider>
         </CartItemContext.Provider>
     )
 }
